@@ -62,6 +62,12 @@ include(":server:paper")
 include(":server:bungeecord")
 include(":server:velocity")
 
+// Minecraft 26.3 Bukkit-family adapters; legacy server modules above remain unchanged.
+include(":server:paper_26_3")
+include(":server:folia_26_3")
+include(":server:spigot_26_3")
+include(":server:velocity_26_3")
+
 include(":onejar")
 
 include(":onejar:fabric_1_16_5")

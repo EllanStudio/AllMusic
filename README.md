@@ -23,6 +23,10 @@
 - Folia
 - Velocity
 
+本分支新增服务端 26.3 构建模块：`:server:paper_26_3`、`:server:folia_26_3`、`:server:spigot_26_3` 与 `:server:velocity_26_3`。Paper/Folia 模块以 Paper API `26.3.build.157-beta`、Java 25 编译；Spigot 模块以 Spigot API `26.3-R0.1-SNAPSHOT` 编译；Velocity 模块只依赖 Velocity API `4.2.1-SNAPSHOT`，不依赖 Paper API。旧服务端模块保留。
+
+本次服务端升级不宣称 Fabric、Forge 或 NeoForge 客户端已经支持 26.3；客户端/模组模块需另行迁移和实机验证。
+
 模组支持的服务器
 - Forge
 - NeoForge
