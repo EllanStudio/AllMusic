@@ -39,7 +39,7 @@ jobs:
         run: |
           export JAVA_HOME="$JAVA_HOME_21"
           export PATH="$JAVA_HOME/bin:$PATH"
-          ./gradlew -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand :client:fabric_1_20_1:build
+          ./gradlew -Pallmusic.scope=legacy-client -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand :client:fabric_1_20_1:build
 
   modern-clients:
     name: Minecraft 26.3 clients
@@ -73,7 +73,7 @@ jobs:
         run: |
           export JAVA_HOME="$JAVA_HOME_21"
           export PATH="$JAVA_HOME/bin:$PATH"
-          ./gradlew -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
+          ./gradlew -Pallmusic.scope=modern-client-26.3 -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
 
   legacy-server:
     name: Legacy Paper server
@@ -100,7 +100,7 @@ jobs:
         run: |
           export JAVA_HOME="$JAVA_HOME_21"
           export PATH="$JAVA_HOME/bin:$PATH"
-          ./gradlew -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand :server:paper:build
+          ./gradlew -Pallmusic.scope=legacy-server -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand :server:paper:build
 
   modern-servers:
     name: Minecraft 26.3 servers
@@ -138,7 +138,7 @@ jobs:
         run: |
           export JAVA_HOME="$JAVA_HOME_21"
           export PATH="$JAVA_HOME/bin:$PATH"
-          ./gradlew -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
+          ./gradlew -Pallmusic.scope=modern-server-26.3 -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
 
   onejar:
     name: Minecraft 26.3 one-jars
@@ -172,4 +172,4 @@ jobs:
         run: |
           export JAVA_HOME="$JAVA_HOME_21"
           export PATH="$JAVA_HOME/bin:$PATH"
-          ./gradlew -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
+          ./gradlew -Pallmusic.scope=onejar-26.3 -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
