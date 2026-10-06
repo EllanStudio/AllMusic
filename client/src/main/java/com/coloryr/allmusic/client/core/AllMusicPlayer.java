@@ -595,7 +595,6 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
                             continue;
                         }
                     }
-                }
 
                     stopAndClearSource();
                 } else {
