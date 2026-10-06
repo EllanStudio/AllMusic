@@ -50,7 +50,7 @@ jobs:
         run: |
           set "JAVA_HOME=%JAVA_HOME_21%"
           set "PATH=%JAVA_HOME_21%\bin;%PATH%"
-          gradlew.bat -Dorg.gradle.java.installations.paths=%JAVA_HOME_25% --no-daemon :client:fabric_26_2:build --configure-on-demand --parallel --max-workers=4
+          gradlew.bat -Pallmusic.scope=client-26.2 -Dorg.gradle.java.installations.paths=%JAVA_HOME_25% --no-daemon :client:fabric_26_2:build --configure-on-demand --parallel --max-workers=4
       - name: update
         uses: actions/upload-artifact@v4
         with:
