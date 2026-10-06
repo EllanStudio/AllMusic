@@ -1,6 +1,7 @@
 package com.coloryr.allmusic.client.core;
 
 import com.coloryr.allmusic.client.core.objs.PlayTaskObj;
+import com.coloryr.allmusic.client.core.player.AudioFormatDetector;
 import com.coloryr.allmusic.client.core.player.decoder.BuffPack;
 import com.coloryr.allmusic.client.core.player.decoder.IDecoder;
 import com.coloryr.allmusic.client.core.player.decoder.flac.FlacDecoder;
@@ -26,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Objects;
 import java.util.Stack;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -462,7 +464,8 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
                     continue;
                 }
 
-                nowTask = tasks.pop();
+                PlayTaskObj task = tasks.pop();
+                nowTask = task;
                 if (nowTask == null || nowTask.url == null || nowTask.url.isEmpty()) {
                     continue;
                 }
@@ -837,10 +840,4 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
         seek(local);
     }
 
-    public void setReload() {
-        if (isPlay) {
-            reload = true;
-            isClose = true;
-        }
-    }
 }
