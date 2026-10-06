@@ -50,8 +50,13 @@ allprojects {
     }
 
     afterEvaluate {
+        // Launch Gradle on Java 21, but compile Minecraft 26.x adapters with Java 25.
+        // Legacy module bytecode targets stay unchanged.
+        java.toolchain.languageVersion.set(JavaLanguageVersion.of(
+            if (java.targetCompatibility == JavaVersion.VERSION_25) 25 else 21
+        ))
         if (plugins.hasPlugin("com.gtnewhorizons.retrofuturagradle")) return@afterEvaluate
-        if (plugins.hasPlugin("fabric-loom")) return@afterEvaluate
+        if (plugins.hasPlugin("fabric-loom") || plugins.hasPlugin("net.fabricmc.fabric-loom")) return@afterEvaluate
 
         val rfgObfAttr = Attribute.of("com.gtnewhorizons.retrofuturagradle.obfuscation", String::class.java)
         val rfgDeobfAttr = Attribute.of("rfgDeobfuscatorTransformed", Boolean::class.javaObjectType)
