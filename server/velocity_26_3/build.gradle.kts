@@ -2,7 +2,8 @@ java.sourceCompatibility = JavaVersion.VERSION_25
 java.targetCompatibility = JavaVersion.VERSION_25
 
 repositories {
-    maven("https://nexus.velocitypowered.com/repository/maven-public/")
+    // Velocity API artifacts are published to Paper's repository. The old
+    // nexus.velocitypowered.com endpoint intermittently returns HTTP 522.
     maven("https://repo.papermc.io/repository/maven-public/")
 }
 

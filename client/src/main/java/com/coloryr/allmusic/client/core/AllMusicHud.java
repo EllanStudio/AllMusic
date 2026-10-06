@@ -100,7 +100,6 @@ public class AllMusicHud {
     private BufferedImage bg2;
     private volatile boolean isRun;
     private final Thread picThread;
-    private final ScheduledExecutorService service1;
 
     /**
      * 是否有图片
