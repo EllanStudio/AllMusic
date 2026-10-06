@@ -293,7 +293,6 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
                 }
             }
         } while (queued > 0);
-    }
 
             AL10.alSourcef(index, AL10.AL_GAIN, AllMusicCore.bridge.getVolume());
             AL10.alSourcef(index, AL10.AL_PITCH, 1.0f);

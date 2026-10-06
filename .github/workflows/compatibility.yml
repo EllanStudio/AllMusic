@@ -47,9 +47,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task:
-          - :client:fabric_26_3:build
-          - :client:neoforge_26_3:build
+        include:
+          - task: :client:fabric_26_3:build
+            launcher: '21'
+          - task: :client:neoforge_26_3:build
+            launcher: '25'
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21 (Gradle launcher)
@@ -70,8 +72,9 @@ jobs:
           JAVA_HOME_21: ${{ steps.java21.outputs.path }}
           JAVA_HOME_25: ${{ steps.java25.outputs.path }}
           TASK: ${{ matrix.task }}
+          LAUNCHER: ${{ matrix.launcher }}
         run: |
-          export JAVA_HOME="$JAVA_HOME_21"
+          if [ "$LAUNCHER" = "25" ]; then export JAVA_HOME="$JAVA_HOME_25"; else export JAVA_HOME="$JAVA_HOME_21"; fi
           export PATH="$JAVA_HOME/bin:$PATH"
           bash ./gradlew -Pallmusic.scope=modern-client-26.3 -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
 
@@ -108,13 +111,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task:
-          - :server:fabric_26_3:build
-          - :server:neoforge_26_3:build
-          - :server:paper_26_3:build
-          - :server:folia_26_3:build
-          - :server:spigot_26_3:build
-          - :server:velocity_26_3:build
+        include:
+          - task: :server:fabric_26_3:build
+            launcher: '21'
+          - task: :server:neoforge_26_3:build
+            launcher: '25'
+          - task: :server:paper_26_3:build
+            launcher: '21'
+          - task: :server:folia_26_3:build
+            launcher: '21'
+          - task: :server:spigot_26_3:build
+            launcher: '21'
+          - task: :server:velocity_26_3:build
+            launcher: '21'
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21 (Gradle launcher)
@@ -135,8 +144,9 @@ jobs:
           JAVA_HOME_21: ${{ steps.java21.outputs.path }}
           JAVA_HOME_25: ${{ steps.java25.outputs.path }}
           TASK: ${{ matrix.task }}
+          LAUNCHER: ${{ matrix.launcher }}
         run: |
-          export JAVA_HOME="$JAVA_HOME_21"
+          if [ "$LAUNCHER" = "25" ]; then export JAVA_HOME="$JAVA_HOME_25"; else export JAVA_HOME="$JAVA_HOME_21"; fi
           export PATH="$JAVA_HOME/bin:$PATH"
           bash ./gradlew -Pallmusic.scope=modern-server-26.3 -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
 
@@ -146,9 +156,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task:
-          - :onejar:fabric_26_3:build
-          - :onejar:neoforge_26_3:build
+        include:
+          - task: :onejar:fabric_26_3:build
+            launcher: '21'
+          - task: :onejar:neoforge_26_3:build
+            launcher: '25'
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21 (Gradle launcher)
@@ -169,7 +181,8 @@ jobs:
           JAVA_HOME_21: ${{ steps.java21.outputs.path }}
           JAVA_HOME_25: ${{ steps.java25.outputs.path }}
           TASK: ${{ matrix.task }}
+          LAUNCHER: ${{ matrix.launcher }}
         run: |
-          export JAVA_HOME="$JAVA_HOME_21"
+          if [ "$LAUNCHER" = "25" ]; then export JAVA_HOME="$JAVA_HOME_25"; else export JAVA_HOME="$JAVA_HOME_21"; fi
           export PATH="$JAVA_HOME/bin:$PATH"
           bash ./gradlew -Pallmusic.scope=onejar-26.3 -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
