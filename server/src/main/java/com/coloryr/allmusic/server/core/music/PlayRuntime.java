@@ -7,7 +7,6 @@ import com.coloryr.allmusic.server.core.objs.music.MusicObj;
 import com.coloryr.allmusic.server.core.objs.music.SongInfoObj;
 import com.coloryr.allmusic.server.core.utils.HudUtils;
 
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +31,7 @@ public class PlayRuntime {
      * 启动歌曲工作
      */
     public static void start() {
-        new Thread(PlayRuntime::musicPlayTask, "allMusic_play").start();
+        new Thread(PlayRuntime::musicPlayTask, "allmusic_play").start();
 
         service = Executors.newSingleThreadScheduledExecutor();
         service.scheduleAtFixedRate(PlayRuntime::time1, 0, 10, TimeUnit.MILLISECONDS);
@@ -60,6 +59,9 @@ public class PlayRuntime {
      */
     private static void clear() {
         isPlay = false;
+
+        checkVoteNext();
+
         PlayMusic.musicNowTime = 0;
         PlayMusic.musicAllTime = 0;
         PlayMusic.musicLessTime = 0;
@@ -72,6 +74,38 @@ public class PlayRuntime {
         HudUtils.sendHudLyricData();
     }
 
+    private static void checkVoteNext() {
+        VoteItem vote = PlayMusic.getVote();
+        if (vote != null && vote.getType() == VoteItem.VoteType.NEXT && vote.like(PlayMusic.nowPlayMusic)) {
+            AllMusic.side.broadcastInTask(AllMusic.getMessage().vote.cancel1);
+            PlayMusic.removeVote();
+        }
+
+        for (VoteItem item : PlayMusic.cloneVoteList()) {
+            if (item.getType() == VoteItem.VoteType.NEXT && item.like(PlayMusic.nowPlayMusic)) {
+                PlayMusic.removeVote(item);
+            }
+        }
+    }
+
+    private static void checkVotePush() {
+        VoteItem vote = PlayMusic.getVote();
+        SongInfoObj next = PlayMusic.getNextMusic();
+        if (next != null) {
+            if (vote != null) {
+                if (vote.getType() == VoteItem.VoteType.PUSH && vote.like(next)) {
+                    PlayMusic.removeVote();
+                    AllMusic.side.broadcastInTask(AllMusic.getMessage().push.cancel2);
+                }
+            }
+
+            for (VoteItem item : PlayMusic.cloneVoteList()) {
+                if (item.getType() == VoteItem.VoteType.PUSH && item.like(next)) {
+                    PlayMusic.removeVote(item);
+                }
+            }
+        }
+    }
 
     /**
      * 歌曲时间定时器
@@ -108,32 +142,23 @@ public class PlayRuntime {
         }
     }
 
-    private static boolean checkPush() {
-        SongInfoObj music = PlayMusic.getPush();
-        if (music != null) {
-            if (PlayMusic.nowPlayMusic.getID().equalsIgnoreCase(music.getID())) {
-                return false;
-            }
-            List<SongInfoObj> list = PlayMusic.getList();
-            if (list.isEmpty()) {
-                return false;
-            }
-            SongInfoObj id1 = list.get(0);
-            if (id1 != null && id1.getID().equalsIgnoreCase(music.getID())) {
-                return false;
-            }
-            for (int a = 1; a < list.size(); a++) {
-                id1 = list.get(a);
-                if (id1.getID().equalsIgnoreCase(music.getID()))
-                    return true;
-            }
-        }
-
-        return false;
+    public static int getMiniVote() {
+        return Math.min(AllMusic.getConfig().vote.minVote, AllMusic.side.getPlayers().size());
     }
 
-    public static int getMiniVote() {
-        return Math.min(AllMusic.getConfig().minVote, AllMusic.side.getPlayers().size());
+    private static void sendVoteInfo(boolean timeout) {
+        if (timeout) {
+            VoteItem vote = PlayMusic.getVote();
+            AllMusic.side.broadcastInTask(AllMusic.getMessage().vote.timeOut
+                    .replace(ARG.count, String.valueOf(vote.votePlayer.size()))
+                    .replace(ARG.countAll, String.valueOf(getMiniVote())));
+        }
+
+        int count = PlayMusic.getVoteCount();
+        if (count > 0) {
+            AllMusic.side.broadcastInTask(AllMusic.getMessage().vote.list
+                    .replace(ARG.count, String.valueOf(count)));
+        }
     }
 
     /**
@@ -145,35 +170,46 @@ public class PlayRuntime {
             if (ping >= 10) {
                 AllMusic.side.ping();
             }
-            if (PlayMusic.getPushTime() > 0) {
-                if (!checkPush()) {
-                    PlayMusic.clearPush();
-                    AllMusic.side.broadcastInTask(AllMusic.getMessage().push.cancel);
+
+            VoteItem vote = PlayMusic.getVote();
+            if (vote != null) {
+                PlayMusic.voteTick();
+                if (PlayMusic.getVoteTime() <= 0) {
+                    sendVoteInfo(true);
+                    PlayMusic.removeVote();
                 } else {
-                    PlayMusic.pushTick();
-                    if (PlayMusic.getPushTime() == 0) {
-                        PlayMusic.clearPush();
-                        AllMusic.side.broadcastInTask(AllMusic.getMessage().push.timeOut);
-                    } else {
-                        if (PlayMusic.getPushCount() >= getMiniVote()) {
-                            PlayMusic.pushMusic();
-                            PlayMusic.clearPush();
-                            AllMusic.side.broadcastInTask(AllMusic.getMessage().push.doPush);
-                        }
+                    if (PlayMusic.getVote().votePlayer.size() >= getMiniVote()) {
+                        sendVoteInfo(false);
+                        PlayMusic.doVote();
                     }
                 }
-            }
-
-            if (PlayMusic.getVoteTime() > 0) {
-                PlayMusic.voteTick();
-                if (PlayMusic.getVoteTime() == 0) {
-                    PlayMusic.clearVote();
-                    AllMusic.side.broadcastInTask(AllMusic.getMessage().vote.timeOut);
-                } else {
-                    if (PlayMusic.getVoteCount() >= getMiniVote()) {
-                        PlayMusic.musicLessTime = 0;
-                        PlayMusic.clearVote();
-                        AllMusic.side.broadcastInTask(AllMusic.getMessage().vote.voteDone);
+            } else {
+                vote = PlayMusic.nextVote();
+                if (vote != null) {
+                    if (vote.getType() == VoteItem.VoteType.NEXT) {
+                        String data = AllMusic.getMessage().vote.bq;
+                        data = data.replace(ARG.player, vote.getVoteSender())
+                                .replace(ARG.time, String.valueOf(AllMusic.getConfig().vote.voteTime))
+                                .replace(ARG.countAll, String.valueOf(PlayRuntime.getMiniVote()));
+                        AllMusic.side.broadcast(data);
+                        AllMusic.side.broadcast(AllMusic.side.miniMessage(AllMusic.getMessage().vote.bq1)
+                                .append(AllMusic.side.miniMessageRun(AllMusic.getMessage().vote.bq2, "/music agree")));
+                    } else if (vote.getType() == VoteItem.VoteType.PUSH) {
+                        SongInfoObj music = PlayMusic.getMusic(vote.getId(), vote.getApi());
+                        if (music == null) {
+                            AllMusic.side.broadcast(AllMusic.getMessage().push.err4);
+                            PlayMusic.removeVote();
+                            return;
+                        }
+                        String data = AllMusic.getMessage().push.bq;
+                        data = data.replace(ARG.player, vote.getVoteSender())
+                                .replace(ARG.time, String.valueOf(AllMusic.getConfig().vote.voteTime))
+                                .replace(ARG.musicName, music.getName())
+                                .replace(ARG.musicAuthor, music.getAuthor())
+                                .replace(ARG.countAll, String.valueOf(PlayRuntime.getMiniVote()));
+                        AllMusic.side.broadcast(data);
+                        AllMusic.side.broadcast(AllMusic.side.miniMessage(AllMusic.getMessage().push.bq1)
+                                .append(AllMusic.side.miniMessageRun(AllMusic.getMessage().push.bq2, "/music agree")));
                     }
                 }
             }
@@ -187,8 +223,9 @@ public class PlayRuntime {
         while (AllMusic.isRun) {
             try {
                 if (PlayMusic.getListSize() == 0) {
+                    Thread.sleep(1000);
                     if (PlayMusic.error >= 10) {
-                        Thread.sleep(1000);
+                        Thread.sleep(10000);
                     } else if (AllMusic.side.needPlay(true) && PlayMusic.getIdleListSize() > 0) {
                         MusicObj music = PlayMusic.getIdleMusic();
                         if (music != null) {
@@ -198,7 +235,6 @@ public class PlayRuntime {
                             }
                         }
                     }
-                    Thread.sleep(1000);
                 } else {
                     HudUtils.sendClearHud();
                     HudUtils.sendHudNowData();
@@ -211,20 +247,22 @@ public class PlayRuntime {
                         continue;
                     }
 
+                    checkVotePush();
+
                     IMusicApi api = AllMusic.MUSIC_APIS.get(PlayMusic.nowPlayMusic.getApi());
 
                     PlayMusic.url = PlayMusic.nowPlayMusic.getPlayerUrl() == null ?
-                            api.getPlayUrl(PlayMusic.nowPlayMusic.getID()) :
+                            api.getPlayUrl(PlayMusic.nowPlayMusic.getId()) :
                             PlayMusic.nowPlayMusic.getPlayerUrl();
                     if (PlayMusic.url == null) {
                         String data = AllMusic.getMessage().musicPlay.emptyCanPlay;
-                        AllMusic.side.broadcastInTask(data.replace(ARG.musicId, PlayMusic.nowPlayMusic.getID()));
+                        AllMusic.side.broadcastInTask(data.replace(ARG.musicId, PlayMusic.nowPlayMusic.getId()));
                         PlayMusic.nowPlayMusic = null;
                         continue;
                     }
 
                     if (PlayMusic.nowPlayMusic.getPlayerUrl() == null)
-                        PlayMusic.lyric = api.getLyric(PlayMusic.nowPlayMusic.getID());
+                        PlayMusic.lyric = api.getLyric(PlayMusic.nowPlayMusic.getId());
                     else
                         PlayMusic.lyric = new LyricSave();
 
@@ -274,7 +312,7 @@ public class PlayRuntime {
                         AllMusic.side.sendStop();
                     } else {
                         String data = AllMusic.getMessage().musicPlay.emptyCanPlay;
-                        AllMusic.side.broadcastInTask(data.replace(ARG.musicId, PlayMusic.nowPlayMusic.getID()));
+                        AllMusic.side.broadcastInTask(data.replace(ARG.musicId, PlayMusic.nowPlayMusic.getId()));
                     }
                     clear();
                 }

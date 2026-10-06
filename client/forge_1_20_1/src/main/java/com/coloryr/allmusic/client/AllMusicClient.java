@@ -46,7 +46,6 @@ public class AllMusicClient implements AllMusicBridge {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         modEventBus.addListener(this::setup);
-        modEventBus.addListener(this::onLoad);
 
         MinecraftForge.EVENT_BUS.register(this);
     }
@@ -104,10 +103,6 @@ public class AllMusicClient implements AllMusicBridge {
         return Minecraft.getInstance().font.lineHeight;
     }
 
-    public void onLoad(final SoundEngineLoadEvent e) {
-        AllMusicCore.reload();
-    }
-
     @SubscribeEvent
     public void onSound(final SoundEvent.SoundSourceEvent e) {
         if (!AllMusicCore.isPlay()) return;
@@ -123,7 +118,8 @@ public class AllMusicClient implements AllMusicBridge {
     }
 
     public float getVolume() {
-        return Minecraft.getInstance().options.getSoundSourceVolume(SoundSource.RECORDS);
+        return Minecraft.getInstance().options.getSoundSourceVolume(SoundSource.RECORDS)
+                * Minecraft.getInstance().options.getSoundSourceVolume(SoundSource.MASTER);
     }
 
     @SubscribeEvent

@@ -50,11 +50,6 @@ public class AllMusicClient implements IPayloadHandler<MusicCodec>, AllMusicBrid
         event.enqueueWork(AllMusicCore::renderInit);
     }
 
-    @SubscribeEvent
-    public static void onLoad(final SoundEngineLoadEvent e) {
-        AllMusicCore.reload();
-    }
-
     public void sendMessage(String data) {
         data = "[AllMusic Client]" + data;
         LOGGER.warn(data);
@@ -98,11 +93,12 @@ public class AllMusicClient implements IPayloadHandler<MusicCodec>, AllMusicBrid
     }
 
     public float getVolume() {
-        return Minecraft.getInstance().options.getSoundSourceVolume(SoundSource.RECORDS);
+        return Minecraft.getInstance().options.getSoundSourceVolume(SoundSource.RECORDS)
+                * Minecraft.getInstance().options.getSoundSourceVolume(SoundSource.MASTER);
     }
 
     @Override
-    public TextFrameBuffer makeTextRender(String name) {
+    public TextFrameBuffer<?> makeTextRender(String name) {
         return new CoreRenderTarget(name);
     }
 

@@ -18,6 +18,7 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.sound.PlaySoundEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -71,6 +72,11 @@ public class AllMusicClient implements AllMusicBridge {
         }
     }
 
+    @Mod.EventHandler
+    public void loadComplete(final FMLLoadCompleteEvent event) {
+        AllMusicCore.renderInit();
+    }
+
     @SubscribeEvent
     public void onSound(final PlaySoundEvent e) {
         if (!AllMusicCore.isPlay()) return;
@@ -121,7 +127,8 @@ public class AllMusicClient implements AllMusicBridge {
     }
 
     public float getVolume() {
-        return Minecraft.getMinecraft().gameSettings.getSoundLevel(SoundCategory.RECORDS);
+        return Minecraft.getMinecraft().gameSettings.getSoundLevel(SoundCategory.RECORDS)
+                * Minecraft.getMinecraft().gameSettings.getSoundLevel(SoundCategory.MASTER);
     }
 
     @Override

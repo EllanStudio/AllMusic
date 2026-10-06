@@ -50,11 +50,6 @@ public class AllMusicClient implements AllMusicBridge, IPayloadHandler<MusicCode
     }
 
     @SubscribeEvent
-    public static void onLoad(final SoundEngineLoadEvent e) {
-        AllMusicCore.reload();
-    }
-
-    @SubscribeEvent
     public static void onSound(final PlaySoundSourceEvent e) {
         if (!AllMusicCore.isPlay()) return;
         SoundSource data = e.getSound().getSource();
@@ -133,7 +128,7 @@ public class AllMusicClient implements AllMusicBridge, IPayloadHandler<MusicCode
     }
 
     public float getVolume() {
-        return Minecraft.getInstance().options.getSoundSourceVolume(SoundSource.RECORDS);
+        return Minecraft.getInstance().options.getFinalSoundSourceVolume(SoundSource.RECORDS);
     }
 
     @Override

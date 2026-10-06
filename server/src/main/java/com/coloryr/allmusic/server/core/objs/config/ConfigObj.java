@@ -12,22 +12,6 @@ import java.util.Set;
  */
 public class ConfigObj {
     /**
-     * 最大歌曲数
-     */
-    public int maxPlayList;
-    /**
-     * 一个玩家最大可点数量
-     */
-    public int maxPlayerList;
-    /**
-     * 最小通过投票数
-     */
-    public int minVote;
-    /**
-     * 投票时间
-     */
-    public int voteTime;
-    /**
      * 歌曲延迟
      */
     public int lyricDelay;
@@ -84,10 +68,6 @@ public class ConfigObj {
      */
     public boolean ktvMode;
     /**
-     * 歌曲音质
-     */
-    public String musicBR;
-    /**
      * 配置文件版本号
      */
     public String version;
@@ -107,6 +87,10 @@ public class ConfigObj {
      * 花费点歌
      */
     public CostObj cost;
+    /**
+     * 投票配置
+     */
+    public VoteObj vote;
     /**
      * 默认音乐API
      */
@@ -141,7 +125,7 @@ public class ConfigObj {
             saveConfig = true;
             adminList = new HashSet<>();
         }
-        if (economy == null || economy.check()) {
+        if (economy == null) {
             saveConfig = true;
             economy = EconomyObj.make();
         }
@@ -157,6 +141,10 @@ public class ConfigObj {
             saveConfig = true;
             cost = CostObj.make();
         }
+        if (vote == null) {
+            saveConfig = true;
+            vote = VoteObj.make();
+        }
         if (lyricReplace == null) {
             saveConfig = true;
             lyricReplace = new HashMap<>();
@@ -166,11 +154,7 @@ public class ConfigObj {
     }
 
     public void init() {
-        maxPlayerList = 0;
         fixSongTime = 0;
-        maxPlayList = 10;
-        minVote = 3;
-        voteTime = 30;
         adminList = new HashSet<>();
         adminList.add("color_yr");
         playListSwitch = true;
@@ -188,6 +172,7 @@ public class ConfigObj {
         economy = EconomyObj.make();
         funConfig = FunConfigObj.make();
         cost = CostObj.make();
+        vote = VoteObj.make();
         ktvMode = true;
         ktvLyricDelay = 0;
         lyricDelay = 0;

@@ -1,6 +1,5 @@
-package com.coloryr.allmusic.client.core.player;
+package com.coloryr.allmusic.client.core;
 
-import com.coloryr.allmusic.client.core.AllMusicCore;
 import com.coloryr.allmusic.client.core.objs.PlayTaskObj;
 import com.coloryr.allmusic.client.core.player.decoder.BuffPack;
 import com.coloryr.allmusic.client.core.player.decoder.IDecoder;
@@ -25,9 +24,8 @@ import java.io.InputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.Objects;
 import java.util.Stack;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -64,14 +62,9 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
     private ScheduledExecutorService scheduler;
 
     public AllMusicPlayer(IntBuffer source) {
-        try {
-            this.source = source;
-            new Thread(this::run, "allmusic_run").start();
-            scheduler = Executors.newSingleThreadScheduledExecutor();
-            scheduler.scheduleAtFixedRate(this::timerTick, 0, 10, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        this.source = source;
+        new Thread(this::run, "allmusic_run").start();
+        AllMusicCore.service.scheduleAtFixedRate(this::timerTick, 0, 10, TimeUnit.MILLISECONDS);
     }
 
     public void stop() {
@@ -79,7 +72,6 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
         isClose = true;
         semaphore.release();
         semaphoreReload.release();
-        scheduler.close();
     }
 
     public void setChat() {
@@ -291,16 +283,17 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
             AL10.alSourceStop(index);
             AL10.alSourcei(index, AL10.AL_BUFFER, AL10.AL_NONE);
 
-            int queued;
-            do {
-                queued = AL10.alGetSourcei(index, AL10.AL_BUFFERS_QUEUED);
-                if (queued > 0) {
-                    int buffer = AL10.alSourceUnqueueBuffers(index);
-                    if (buffer != 0) {
-                        AL10.alDeleteBuffers(buffer);
-                    }
+        int queued;
+        do {
+            queued = AL10.alGetSourcei(index, AL10.AL_BUFFERS_QUEUED);
+            if (queued > 0) {
+                int buffer = AL10.alSourceUnqueueBuffers(index);
+                if (buffer != 0) {
+                    AL10.alDeleteBuffers(buffer);
                 }
-            } while (queued > 0);
+            }
+        } while (queued > 0);
+    }
 
             AL10.alSourcef(index, AL10.AL_GAIN, AllMusicCore.bridge.getVolume());
             AL10.alSourcef(index, AL10.AL_PITCH, 1.0f);
@@ -459,9 +452,6 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
         isRun = true;
         while (true) {
             try {
-                if (!isRun) {
-                    return;
-                }
                 semaphore.acquire();
                 if (!isRun) {
                     return;
@@ -469,8 +459,14 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
 
                 prepareSource();
 
-                PlayTaskObj task = tasks.pop();
-                if (task == null || task.url == null || task.url.isEmpty()) continue;
+                if (tasks.isEmpty()) {
+                    continue;
+                }
+
+                nowTask = tasks.pop();
+                if (nowTask == null || nowTask.url == null || nowTask.url.isEmpty()) {
+                    continue;
+                }
                 tasks.clear();
                 nowTask = task;
                 currentUrl = task.url;
@@ -502,6 +498,7 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
                 }
 
                 isPlay = true;
+
                 int frequency = decoder.getOutputFrequency();
                 int channels = decoder.getOutputChannels();
                 if (channels != 1 && channels != 2) {
@@ -520,6 +517,13 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
                     if (!isRun) {
                         return;
                     }
+                    if (isClose) {
+                        break;
+                    }
+                    if (!AL10.alIsSource(index)) {
+                        setReload();
+                        break;
+                    }
                     try {
                         if (!isCurrentSource()) {
                             reload = true;
@@ -531,7 +535,9 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
                             if (!isRun) {
                                 return;
                             }
-                            if (isClose) break;
+                            if (isClose) {
+                                break;
+                            }
                             BuffPack output = decoder.decodeFrame();
                             if (output == null) {
                                 decoderEnded = true;
@@ -561,13 +567,9 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
 
                         Thread.sleep(5);
 
-                        if (isChat) {
-                            chatCount++;
-                            if (chatCount >= 200) {
-                                isChat = false;
-                                chatCount = 0;
-                            }
-                        }
+                        checkChat();
+                        checkVolume();
+                        dequeue();
                     } catch (Exception e) {
                         if (!isClose) {
                             e.printStackTrace();
@@ -584,12 +586,9 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
                     Thread.sleep(50);
                 }
 
-                if (!reload) {
+                if (reload) {
                     wait = true;
-                    if (semaphoreReload.tryAcquire(500, TimeUnit.MILLISECONDS)) {
-                        if (!isRun) {
-                            break;
-                        }
+                    if (semaphoreReload.tryAcquire(1, TimeUnit.SECONDS)) {
                         if (reload) {
                             nowTask = null;
                             tasks.push(task);
@@ -597,7 +596,7 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
                             continue;
                         }
                     }
-                    isPlay = false;
+                }
 
                     stopAndClearSource();
                 } else {
@@ -680,9 +679,19 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
     public void closePlayer() {
         isClose = true;
         nowTask = null;
+        tasks.clear();
     }
 
     public void setMusic(String url) {
+        if (nowTask != null && nowTask.url.equalsIgnoreCase(url)) {
+            return;
+        }
+        for (PlayTaskObj item : tasks) {
+            if (item.url.equalsIgnoreCase(url)) {
+                return;
+            }
+        }
+
         closePlayer();
         PlayTaskObj taskObj = new PlayTaskObj();
         taskObj.time = 0;
@@ -712,6 +721,13 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
         if (decoder != null) {
             decoder.close();
             decoder = null;
+        }
+    }
+
+    public void setReload() {
+        if (isPlay) {
+            reload = true;
+            isClose = true;
         }
     }
 
