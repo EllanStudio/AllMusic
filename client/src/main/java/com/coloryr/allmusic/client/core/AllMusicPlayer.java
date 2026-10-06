@@ -512,7 +512,6 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
                 if (task.time != 0) {
                     decoder.set(task.time);
                 }
-                int chatCount = 0;
                 boolean decoderEnded = false;
 
                 while (true) {
@@ -569,9 +568,6 @@ public class AllMusicPlayer extends InputStream implements SeekableInput {
 
                         Thread.sleep(5);
 
-                        checkChat();
-                        checkVolume();
-                        dequeue();
                     } catch (Exception e) {
                         if (!isClose) {
                             e.printStackTrace();
