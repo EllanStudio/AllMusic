@@ -1,0 +1,188 @@
+name: AllMusic Compatibility
+
+on:
+  push:
+    branches: [chore/minecraft-26.3]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: allmusic-compatibility-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  legacy-client:
+    name: Legacy Fabric 1.20.1 client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21 (Gradle launcher)
+        id: java21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up JDK 25 (Minecraft 26.3 toolchain)
+        id: java25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build legacy client
+        env:
+          JAVA_HOME_21: ${{ steps.java21.outputs.path }}
+          JAVA_HOME_25: ${{ steps.java25.outputs.path }}
+        run: |
+          export JAVA_HOME="$JAVA_HOME_21"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          bash ./gradlew -Pallmusic.scope=legacy-client -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand :client:fabric_1_20_1:build
+
+  modern-clients:
+    name: Minecraft 26.3 clients
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - task: :client:fabric_26_3:build
+            launcher: '21'
+          - task: :client:neoforge_26_3:build
+            launcher: '25'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21 (Gradle launcher)
+        id: java21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up JDK 25 (Minecraft 26.3 toolchain)
+        id: java25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build client
+        env:
+          JAVA_HOME_21: ${{ steps.java21.outputs.path }}
+          JAVA_HOME_25: ${{ steps.java25.outputs.path }}
+          TASK: ${{ matrix.task }}
+          LAUNCHER: ${{ matrix.launcher }}
+        run: |
+          if [ "$LAUNCHER" = "25" ]; then export JAVA_HOME="$JAVA_HOME_25"; else export JAVA_HOME="$JAVA_HOME_21"; fi
+          export PATH="$JAVA_HOME/bin:$PATH"
+          bash ./gradlew -Pallmusic.scope=modern-client-26.3 -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
+
+  legacy-server:
+    name: Legacy Paper server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21 (Gradle launcher)
+        id: java21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up JDK 25 (Minecraft 26.3 toolchain)
+        id: java25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build legacy server
+        env:
+          JAVA_HOME_21: ${{ steps.java21.outputs.path }}
+          JAVA_HOME_25: ${{ steps.java25.outputs.path }}
+        run: |
+          export JAVA_HOME="$JAVA_HOME_21"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          bash ./gradlew -Pallmusic.scope=legacy-server -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand :server:paper:build
+
+  modern-servers:
+    name: Minecraft 26.3 servers
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - task: :server:fabric_26_3:build
+            launcher: '21'
+          - task: :server:neoforge_26_3:build
+            launcher: '25'
+          - task: :server:paper_26_3:build
+            launcher: '21'
+          - task: :server:folia_26_3:build
+            launcher: '21'
+          - task: :server:spigot_26_3:build
+            launcher: '21'
+          - task: :server:velocity_26_3:build
+            launcher: '21'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21 (Gradle launcher)
+        id: java21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up JDK 25 (Minecraft 26.3 toolchain)
+        id: java25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build server
+        env:
+          JAVA_HOME_21: ${{ steps.java21.outputs.path }}
+          JAVA_HOME_25: ${{ steps.java25.outputs.path }}
+          TASK: ${{ matrix.task }}
+          LAUNCHER: ${{ matrix.launcher }}
+        run: |
+          if [ "$LAUNCHER" = "25" ]; then export JAVA_HOME="$JAVA_HOME_25"; else export JAVA_HOME="$JAVA_HOME_21"; fi
+          export PATH="$JAVA_HOME/bin:$PATH"
+          bash ./gradlew -Pallmusic.scope=modern-server-26.3 -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"
+
+  onejar:
+    name: Minecraft 26.3 one-jars
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - task: :onejar:fabric_26_3:build
+            launcher: '21'
+          - task: :onejar:neoforge_26_3:build
+            launcher: '25'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21 (Gradle launcher)
+        id: java21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up JDK 25 (Minecraft 26.3 toolchain)
+        id: java25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build one-jar
+        env:
+          JAVA_HOME_21: ${{ steps.java21.outputs.path }}
+          JAVA_HOME_25: ${{ steps.java25.outputs.path }}
+          TASK: ${{ matrix.task }}
+          LAUNCHER: ${{ matrix.launcher }}
+        run: |
+          if [ "$LAUNCHER" = "25" ]; then export JAVA_HOME="$JAVA_HOME_25"; else export JAVA_HOME="$JAVA_HOME_21"; fi
+          export PATH="$JAVA_HOME/bin:$PATH"
+          bash ./gradlew -Pallmusic.scope=onejar-26.3 -Dorg.gradle.java.installations.paths="$JAVA_HOME_25" --no-daemon --stacktrace --configure-on-demand "$TASK"

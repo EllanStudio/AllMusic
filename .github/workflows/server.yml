@@ -27,7 +27,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: 'true'
-      - name: Set up JDK 25
+      - name: Set up JDK 21 (Gradle launcher)
+        id: java21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Set up JDK 25 (Minecraft toolchain)
+        id: java25
         uses: actions/setup-java@v4
         with:
           java-version: '25'
@@ -36,8 +43,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
       - name: build
         shell: cmd
+        env:
+          JAVA_HOME_21: ${{ steps.java21.outputs.path }}
+          JAVA_HOME_25: ${{ steps.java25.outputs.path }}
         run: |
-          gradlew :server:buildServer
+          set "JAVA_HOME=%JAVA_HOME_21%"
+          set "PATH=%JAVA_HOME_21%\bin;%PATH%"
+          gradlew.bat -Pallmusic.scope=server-all -Dorg.gradle.java.installations.paths=%JAVA_HOME_25% --no-daemon :server:buildServer
       - name: update
         uses: actions/upload-artifact@v4
         with:

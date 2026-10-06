@@ -100,7 +100,6 @@ public class AllMusicHud {
     private BufferedImage bg2;
     private volatile boolean isRun;
     private final Thread picThread;
-    private final ScheduledExecutorService service1;
 
     /**
      * 是否有图片
@@ -134,10 +133,9 @@ public class AllMusicHud {
         picThread = new Thread(this::run, "allmusic_pic");
         picThread.start();
 
-        service1 = Executors.newScheduledThreadPool(3);
-        service1.scheduleAtFixedRate(this::picRotateTick, 0, 1, TimeUnit.MILLISECONDS);
-        service1.scheduleAtFixedRate(this::lyricTick, 0, 10, TimeUnit.MILLISECONDS);
-        service1.scheduleAtFixedRate(this::loopTick, 0, 100, TimeUnit.MILLISECONDS);
+        AllMusicCore.service.scheduleAtFixedRate(this::picRotateTick, 0, 1, TimeUnit.MILLISECONDS);
+        AllMusicCore.service.scheduleAtFixedRate(this::lyricTick, 0, 10, TimeUnit.MILLISECONDS);
+        AllMusicCore.service.scheduleAtFixedRate(this::loopTick, 0, 100, TimeUnit.MILLISECONDS);
 
         picRender = AllMusicCore.bridge.makePictureRender(size);
         modernRender = AllMusicCore.bridge.makeModernHudRender(size);
@@ -173,7 +171,6 @@ public class AllMusicHud {
 
     public void stop() {
         isRun = false;
-        service1.close();
         semaphore.release();
         picThread.interrupt();
         if (modernRender != null) {

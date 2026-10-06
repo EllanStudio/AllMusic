@@ -80,11 +80,6 @@ public class AllMusicClient implements IPayloadHandler<MusicCodec>, AllMusicBrid
     }
 
     @SubscribeEvent
-    public static void onLoad(final SoundEngineLoadEvent e) {
-        AllMusicCore.reload();
-    }
-
-    @SubscribeEvent
     public static void onRenderOverlay(RenderGuiLayerEvent.Post e) {
         if (e.getName().equals(VanillaGuiLayers.CAMERA_OVERLAYS)) {
             context = e.getGuiGraphics();
@@ -140,11 +135,11 @@ public class AllMusicClient implements IPayloadHandler<MusicCodec>, AllMusicBrid
     }
 
     public float getVolume() {
-        return Minecraft.getInstance().options.getSoundSourceVolume(SoundSource.RECORDS);
+        return Minecraft.getInstance().options.getFinalSoundSourceVolume(SoundSource.RECORDS);
     }
 
     @Override
-    public TextFrameBuffer makeTextRender(String name) {
+    public TextFrameBuffer<?> makeTextRender(String name) {
         return new CoreRenderTarget(name);
     }
 

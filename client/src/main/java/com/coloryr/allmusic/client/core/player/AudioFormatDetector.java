@@ -1,7 +1,7 @@
 package com.coloryr.allmusic.client.core.player;
 
-final class AudioFormatDetector {
-    enum Format {
+public final class AudioFormatDetector {
+    public enum Format {
         MP3,
         M4A,
         OGG,
@@ -12,7 +12,7 @@ final class AudioFormatDetector {
     private AudioFormatDetector() {
     }
 
-    static Format detect(byte[] head, int length) {
+    public static Format detect(byte[] head, int length) {
         int available = Math.min(length, head.length);
         if (available >= 4 && matches(head, 0, 'f', 'L', 'a', 'C')) {
             return Format.FLAC;
@@ -32,7 +32,7 @@ final class AudioFormatDetector {
         return Format.UNKNOWN;
     }
 
-    static String hexPrefix(byte[] head, int length) {
+    public static String hexPrefix(byte[] head, int length) {
         int available = Math.min(Math.min(length, head.length), 12);
         StringBuilder result = new StringBuilder(available * 3);
         for (int index = 0; index < available; index++) {

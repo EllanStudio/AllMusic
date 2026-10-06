@@ -40,6 +40,8 @@ public class AllMusic {
 
     public static final String SERVER_DIR = "allmusic_server/";
 
+    public static File basePath;
+
     /**
      * 客户端插件信道名
      */
@@ -55,11 +57,11 @@ public class AllMusic {
     /**
      * 配置文件版本号
      */
-    public static final String configVersion = "401";
+    public static final String configVersion = "402";
     /**
      * 语言文件配置版本号
      */
-    public static final String messageVersion = "400";
+    public static final String messageVersion = "401";
     /**
      * 日志
      */
@@ -151,7 +153,7 @@ public class AllMusic {
                 return true;
             if (!checkPlay)
                 return false;
-            return PlayMusic.containNowPlay(name);
+            return !PlayMusic.containNowPlay(name);
         } catch (NoSuchElementException e) {
             return true;
         }
@@ -177,7 +179,7 @@ public class AllMusic {
                 return true;
             if (!checkPlay)
                 return false;
-            return PlayMusic.containNowPlay(name);
+            return !PlayMusic.containNowPlay(name);
         } catch (NoSuchElementException e) {
             return true;
         }
@@ -282,6 +284,10 @@ public class AllMusic {
             AllMusic.log.data("<light_purple>[AllMusic]<red>没有注册音乐");
         }
 
+        for (IMusicApi api : MUSIC_APIS.values()) {
+            api.reload(basePath);
+        }
+
         log.data("<light_purple>[AllMusic]<yellow>已启动-" + version);
     }
 
@@ -384,6 +390,9 @@ public class AllMusic {
             if (BanSave.checkMuteListPlayer(player1)) {
                 return;
             }
+            if (PlayMusic.containNowPlay(player1)) {
+                return;
+            }
 
             AllMusic.side.runTask(() -> {
                 SongInfoObj music = PlayMusic.nowPlayMusic;
@@ -405,11 +414,13 @@ public class AllMusic {
     public static void init(File file) {
         log.data("<light_purple>[AllMusic]<yellow>正在启动，感谢使用，本插件交流群：571239090");
         try {
-            file.mkdir();
+            isRun = true;
+            basePath = file;
+            basePath.mkdir();
 
-            configFile = new File(file, "config.json");
-            messageFile = new File(file, "message.json");
-            cookieFile = new File(file, "cookie.json");
+            configFile = new File(basePath, "config.json");
+            messageFile = new File(basePath, "message.json");
+            cookieFile = new File(basePath, "cookie.json");
             if (!configFile.exists()) {
                 configFile.createNewFile();
             }
@@ -420,16 +431,14 @@ public class AllMusic {
                 cookieFile.createNewFile();
             }
 
-            BanSave.init(file);
-            HudSave.init(file);
-            MusicListSave.init(file);
+            BanSave.init(basePath);
+            HudSave.init(basePath);
+            MusicListSave.init(basePath);
 
-            loadConfig();
-
-            apis = new File(file, "api");
+            apis = new File(basePath, "api");
             apis.mkdirs();
 
-            isRun = true;
+            loadConfig();
         } catch (IOException e) {
             isRun = false;
             log.data("<light_purple>[AllMusic]<red>启动失败");
